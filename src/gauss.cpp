@@ -123,11 +123,7 @@ int main(int argc, char *argv[])
                     0,
                     NULL);
 
-
-        // Create a buffer for the result
-        //cl::Buffer clResult(context, CL_MEM_WRITE_ONLY, sizeof(float)*width*height);
-
-        // Create Gaussian maskstd::
+        // Create Gaussian mask
         float gauss_sigma = 2.0;
         int maskSize = 5;
         // CREATE CONVOLUTION MATRIX
@@ -170,17 +166,6 @@ int main(int argc, char *argv[])
         region[0] = width; region[1] = height; region[2] = 1;
 
         queue.enqueueReadImage(imageOutput, CL_TRUE, origin, region, 0, 0, oup);
-
-        // if(clEnqueueReadImage(cl.getCommandQueue(), imageOutput, CL_TRUE, new long[] {0,0,0}, 
-        //         new long[] {width, height, 1}, width, 0, Pointer.to(grayimg_byte), 0, null, null) != CL_SUCCESS) {
-        //     System.err.println("Cant read values from Blackwhite-kernel");
-        //     System.exit(1);
-        // }
-
-        // // Transfer image back to host
-        //float* data = new float[width*height];
-        //queue.enqueueReadBuffer(clResult, CL_TRUE, 0, sizeof(float)*width*height, data)
-
 
         cv::imwrite(filename_out,  cv::Mat(height, width, CV_8UC4, oup));
 
