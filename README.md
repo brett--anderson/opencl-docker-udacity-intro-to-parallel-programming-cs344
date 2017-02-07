@@ -18,7 +18,7 @@ The original motivation for this project was to convert the CUDA examples across
 
 The Gaussian mask and kernel function was copied [from this repo](https://github.com/mnmnc/gaussian_blur_opencl). I created my own verison because I wanted to use OpenCV to work with the images and I also wanted to use the cl::Image2D class to move the image to and from the device.
 
-I also took insipration from [this version](https://github.com/smistad/OpenCL-Gaussian-Blur) too. I created my own version rather than use this one because I wanted to use the cl::Image2D class for both input and output from the device, rather than just input. I also wanted to use OpenCV and the version linked to uses it's own rather large image library. I also had trouble running it inside nvidia-docker since the image library tries to open a render window to display the result.
+I also took inspiration from [this version](https://github.com/smistad/OpenCL-Gaussian-Blur) too. I created my own version rather than use this one because I wanted to use the cl::Image2D class for both input and output from the device, rather than just input. I also wanted to use OpenCV and the version linked to uses it's own rather large image library. I also had trouble running it inside nvidia-docker since the image library tries to open a render window to display the result.
 
 Much of the helper libraries came from [this excellent resource](https://github.com/HandsOnOpenCL/Exercises-Solutions). They also provide a great introductory set of lectures and problem sets for someone starting out with OpenCL
 
