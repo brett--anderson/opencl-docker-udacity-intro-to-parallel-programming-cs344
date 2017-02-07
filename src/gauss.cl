@@ -4,20 +4,51 @@ __kernel void process(
         __read_only image2d_t src,
         __constant float * mask,
         __write_only image2d_t dst,
-        __private int maskSize
+        __private int size,
+        __private int W,
+        __private int H
     ) {
 
     const int2 pos = {get_global_id(0), get_global_id(1)};
-    
-    // Collect neighbor values and multiply with gaussian
-    float sum = 0.0f;
-    // Calculate the mask size based on sigma (larger sigma, larger mask)
-    for(int a = -maskSize; a < maskSize+1; a++) {
-        for(int b = -maskSize; b < maskSize+1; b++) {
-            sum += mask[a+maskSize+(b+maskSize)*(maskSize*2+1)]
-                *read_imagef(src, sampler, pos + (int2)(a,b)).x;
+
+    // VARIABLES
+    unsigned int x, y;
+    float4 value;
+    float4 color;
+    int i, xOff, yOff, center;
+
+
+    // CALCULATE VARIABLES
+    center = size / 2;
+
+    // PROCESS THE PIXEL
+    if((pos.x > center && pos.x < (W-center)) &&
+     (pos.y > center && pos.y < (H-center)))
+    {
+        value=(float4)(0,0,0,0);
+        for(y = 0; y < size; y++)
+        {
+            yOff = (y-center);
+            for(x = 0; x < size; x++)
+            {
+                xOff = (x-center);
+
+                color = read_imagef(src, sampler, (int2)(pos.x + xOff, pos.y + yOff));
+                value.x += mask[y * size + x] * color.x;
+                value.y += mask[y * size + x] * color.y;
+                value.z += mask[y * size + x] * color.z;
+
+                
+                        
+            }
         }
+        write_imagef(dst, pos, value);
+        
+    }
+    else // VALUE REMAINS IF WE ARE NEAR THE EDGE
+    {
+        color = read_imagef(src, sampler, pos);
+        write_imagef(dst, pos, color);
     }
 
-    write_imagef(dst, (int2)(pos.x,pos.y), (float4)(sum, sum, sum, 0));
 }

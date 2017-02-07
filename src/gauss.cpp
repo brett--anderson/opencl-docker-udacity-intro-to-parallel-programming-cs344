@@ -7,24 +7,39 @@
 #include "device_picker.hpp"
 #include "matrix_lib.hpp"
 
-float * createBlurMask(float sigma, int * maskSizePointer) {
-    int maskSize = (int)ceil(3.0f*sigma);
-    float * mask = new float[(maskSize*2+1)*(maskSize*2+1)];
-    float sum = 0.0f;
-    for(int a = -maskSize; a < maskSize+1; a++) {
-        for(int b = -maskSize; b < maskSize+1; b++) {
-            float temp = exp(-((float)(a*a+b*b) / (2*sigma*sigma)));
-            sum += temp;
-            mask[a+maskSize+(b+maskSize)*(maskSize*2+1)] = temp;
+std::vector<double> create_convolution_matrix(double sigma, int maskSize){
+    /*
+    CREATES CONVOLUTION MATRIX FOR GAUSSIAN BLUR,
+    GIVEN SIGMA AND DIMENSION OF THE DESIRED FILTER.
+    */
+
+    int W = maskSize;
+    double kernel[maskSize][maskSize];
+    std::vector<double> result;
+    double mean = W / 2;
+    double sum = 0.0;
+    for (int x = 0; x < W; ++x)
+        for (int y = 0; y < W; ++y) {
+        kernel[x][y] =
+            exp(-0.5 * (pow((x - mean) / sigma, 2.0) +
+            pow((y - mean) / sigma, 2.0))) /
+            (2 * 3.14159 * sigma * sigma);
+
+        // ACCUMULATE VALUES
+        sum += kernel[x][y];
+        }
+
+    // NORMALIZE
+    for (int x = 0; x < W; ++x)
+        for (int y = 0; y < W; ++y)
+            kernel[x][y] /= sum;
+
+    for (int x = 0; x < W; ++x) {
+        for (int y = 0; y < W; ++y) {
+            result.push_back(kernel[x][y]);
         }
     }
-    // Normalize the mask
-    for(int i = 0; i < (maskSize*2+1)*(maskSize*2+1); i++)
-        mask[i] = mask[i] / sum;
-
-    *maskSizePointer = maskSize;
-
-    return mask;
+    return result;
 }
 
 //  Load an image using the OpenCV library and create an OpenCL
@@ -34,8 +49,8 @@ cl::Image2D LoadImage(cl::Context context, char *fileName, int &width, int &heig
     cv::Mat image = cv::imread(fileName, CV_LOAD_IMAGE_COLOR);
     cv::Mat imageRGBA;
     
-    width = image.rows;
-    height = image.cols;
+    width = image.cols;
+    height = image.rows;
     
     cv::cvtColor(image, imageRGBA, CV_RGB2RGBA);
 
@@ -69,7 +84,7 @@ int main(int argc, char *argv[])
 
 //--------------------------------------------------------------------------------
 // Create a context and queue
-//--------------------------------------------------------------------------------
+//---------------------------------------------------------------------93e0d3a9ad61-----------
 
     try
     {
@@ -118,35 +133,38 @@ int main(int argc, char *argv[])
                     0,
                     NULL);
 
-        cl::size_t<3> origin;
-        origin[0] = 0; origin[1] = 0, origin[2] = 0;
-        cl::size_t<3> region;
-        region[0] = width; region[1] = height; region[2] = 1;
 
         // Create a buffer for the result
         //cl::Buffer clResult(context, CL_MEM_WRITE_ONLY, sizeof(float)*width*height);
 
-        // Create Gaussian mask
-        int maskSize;
-        float * mask = createBlurMask(2.0f, &maskSize);
+        // Create Gaussian maskstd::
+        float gauss_sigma = 1;
+        int maskSize = 5;
+        // CREATE CONVOLUTION MATRIX
+        std::vector<double> matrix = create_convolution_matrix(gauss_sigma, maskSize);
+        // CONVOLUTION MATRIX TO NORMAL ARRAY
+        float flat_matrix[maskSize*maskSize];
+        for (int i = 0; i < matrix.size(); ++i){
+            flat_matrix[i] = matrix.at(i);
+        }
 
         // Create buffer for mask and transfer it to the device
-        cl::Buffer clMask(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float)*(maskSize*2+1)*(maskSize*2+1), mask);
+        cl::Buffer clMask(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float)*(maskSize*maskSize), flat_matrix);
 
 //--------------------------------------------------------------------------------
 // OpenCL gaussian blur
 //--------------------------------------------------------------------------------
 
-        // cl::Program program(context, util::loadProgram("gauss.cl"), true);
         cl::Program program(context, util::loadProgram("gauss.cl"), true);
+        //cl::Program program(context, util::loadProgram("border.cl"), true);
 
         // Create the compute kernel from the program
-        cl::make_kernel<cl::Image2D, cl::Buffer, cl::Image2D, int> gaussianBlur(program, "process");
+        cl::make_kernel<cl::Image2D, cl::Buffer, cl::Image2D, int, int, int> gaussianBlur(program, "process");
         //cl::make_kernel<cl::Image2D, cl::Image2D> filter(program, "process");
 
         cl::NDRange global(width, height);
         gaussianBlur(cl::EnqueueArgs(queue, global),
-                clImageInput, clMask, imageOutput, maskSize);
+                clImageInput, clMask, imageOutput, maskSize, width, height);
 
         // cl::NDRange global(width, height);
         // filter(cl::EnqueueArgs(queue, global),
@@ -154,7 +172,12 @@ int main(int argc, char *argv[])
 
         queue.finish();
 
-        float* oup = new float[width * height];
+        cl_uint8* oup = new cl_uint8[width * height];
+
+        cl::size_t<3> origin;
+        origin[0] = 0; origin[1] = 0, origin[2] = 0;
+        cl::size_t<3> region;
+        region[0] = width; region[1] = height; region[2] = 1;
 
         queue.enqueueReadImage(imageOutput, CL_TRUE, origin, region, 0, 0, oup);
 
@@ -169,12 +192,12 @@ int main(int argc, char *argv[])
         //queue.enqueueReadBuffer(clResult, CL_TRUE, 0, sizeof(float)*width*height, data)
 
 
-        cv::imwrite(filename_out,  cv::Mat(width, height, CV_8UC4, oup));
+        cv::imwrite(filename_out,  cv::Mat(height, width, CV_8UC4, oup));
 
     } catch (cl::Error err)
     {
         std::cout << "Exception\n";
-        std::cerr << "ERROR: "
+        std::cout << "ERROR: "
                   << err.what()
                   << "("
                   << err_code(err.err())
