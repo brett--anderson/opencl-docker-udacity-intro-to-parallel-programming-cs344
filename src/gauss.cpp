@@ -69,22 +69,12 @@ cl::Image2D LoadImage(cl::Context context, char *fileName, int &width, int &heig
 int main(int argc, char *argv[])
 {
 
-    int N;                  // A[N][N], B[N][N], C[N][N]
-    int size;               // Number of elements in each matrix
-
-    double start_time;      // Starting time
-    double run_time;        // Timing
-    util::Timer timer;      // Timing
-
-    N    = ORDER;
-    size = N * N;
-
     char * filename = "images/sunset.jpg";
     char * filename_out = "images/sunset_blur.jpg";
 
 //--------------------------------------------------------------------------------
 // Create a context and queue
-//---------------------------------------------------------------------93e0d3a9ad61-----------
+//--------------------------------------------------------------------------------
 
     try
     {
@@ -138,7 +128,7 @@ int main(int argc, char *argv[])
         //cl::Buffer clResult(context, CL_MEM_WRITE_ONLY, sizeof(float)*width*height);
 
         // Create Gaussian maskstd::
-        float gauss_sigma = 1;
+        float gauss_sigma = 2.0;
         int maskSize = 5;
         // CREATE CONVOLUTION MATRIX
         std::vector<double> matrix = create_convolution_matrix(gauss_sigma, maskSize);
