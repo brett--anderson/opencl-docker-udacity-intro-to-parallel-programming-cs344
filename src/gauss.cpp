@@ -49,8 +49,8 @@ cl::Image2D LoadImage(cl::Context context, char *fileName, int &width, int &heig
     cv::Mat image = cv::imread(fileName, CV_LOAD_IMAGE_COLOR);
     cv::Mat imageRGBA;
     
-    width = image.rows;
-    height = image.cols;
+    width = image.cols;
+    height = image.rows;
     
     cv::cvtColor(image, imageRGBA, CV_RGB2RGBA);
 
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 
 //--------------------------------------------------------------------------------
 // Create a context and queue
-//--------------------------------------------------------------------------------
+//---------------------------------------------------------------------93e0d3a9ad61-----------
 
     try
     {
@@ -133,10 +133,6 @@ int main(int argc, char *argv[])
                     0,
                     NULL);
 
-        cl::size_t<3> origin;
-        origin[0] = 0; origin[1] = 0, origin[2] = 0;
-        cl::size_t<3> region;
-        region[0] = width; region[1] = height; region[2] = 1;
 
         // Create a buffer for the result
         //cl::Buffer clResult(context, CL_MEM_WRITE_ONLY, sizeof(float)*width*height);
@@ -159,8 +155,8 @@ int main(int argc, char *argv[])
 // OpenCL gaussian blur
 //--------------------------------------------------------------------------------
 
-        // cl::Program program(context, util::loadProgram("gauss.cl"), true);
         cl::Program program(context, util::loadProgram("gauss.cl"), true);
+        //cl::Program program(context, util::loadProgram("border.cl"), true);
 
         // Create the compute kernel from the program
         cl::make_kernel<cl::Image2D, cl::Buffer, cl::Image2D, int, int, int> gaussianBlur(program, "process");
@@ -176,7 +172,12 @@ int main(int argc, char *argv[])
 
         queue.finish();
 
-        float* oup = new float[width * height];
+        cl_uint8* oup = new cl_uint8[width * height];
+
+        cl::size_t<3> origin;
+        origin[0] = 0; origin[1] = 0, origin[2] = 0;
+        cl::size_t<3> region;
+        region[0] = width; region[1] = height; region[2] = 1;
 
         queue.enqueueReadImage(imageOutput, CL_TRUE, origin, region, 0, 0, oup);
 
@@ -191,12 +192,12 @@ int main(int argc, char *argv[])
         //queue.enqueueReadBuffer(clResult, CL_TRUE, 0, sizeof(float)*width*height, data)
 
 
-        cv::imwrite(filename_out,  cv::Mat(width, height, CV_8UC4, oup));
+        cv::imwrite(filename_out,  cv::Mat(height, width, CV_8UC4, oup));
 
     } catch (cl::Error err)
     {
         std::cout << "Exception\n";
-        std::cerr << "ERROR: "
+        std::cout << "ERROR: "
                   << err.what()
                   << "("
                   << err_code(err.err())

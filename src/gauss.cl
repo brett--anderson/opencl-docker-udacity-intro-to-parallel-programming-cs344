@@ -51,13 +51,4 @@ __kernel void process(
         write_imagef(dst, pos, color);
     }
 
-
-    color = read_imagef(src, sampler, pos);
-    if(pos.x >10 )
-    {
-        write_imagef(dst, (int2)(pos.x-10, pos.y), (float4)(color.x, color.y, color.z, 0));
-    } else {
-        write_imagef(dst, (int2)(pos.x, pos.y), (float4)(0, 0, 0, 0));
-    }
-
 }
