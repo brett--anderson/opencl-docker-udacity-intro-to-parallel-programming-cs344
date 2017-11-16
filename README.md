@@ -41,7 +41,7 @@ Try this command
 
 ## Motivation and Repo's I used
 
-The original motivation for this project was to convert the CUDA examples across to OpenCL from the excellent [Udacity course](www.udacity.com/course/intro-to-parallel-programming--cs344) on parallel programming. This is essentially the equivalent of the first weeks problem set (if you use the grayscale kernel). Udacity uses OpenCV for working with the images and I wanted to use it in the OpenCL version as well to familiarise myself with a machine vision library.
+The original motivation for this project was to convert the CUDA examples across to OpenCL from the excellent [Udacity course](http://www.udacity.com/course/intro-to-parallel-programming--cs344) on parallel programming. This is essentially the equivalent of the first weeks problem set (if you use the grayscale kernel). Udacity uses OpenCV for working with the images and I wanted to use it in the OpenCL version as well to familiarise myself with a machine vision library.
 
 I also wanted to try running everything in docker and later I will see how seamlesly I can deploy the image to AWS HPC.
 
